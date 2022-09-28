@@ -1,0 +1,27 @@
+---
+- name: Set timezone
+  timezone:
+    name: "{{ os_timezone }}"
+  ignore_errors: True
+
+- name: Update all packages && remove dependencies
+  block:
+    - name: Update all packages to their latest version
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 3600
+      when: os_update_packages == true
+
+    - name: Remove dependencies that are no longer required
+      apt:
+        autoremove: yes
+
+- name: Update apt cache & install packages
+  block:
+    - name: Update apt
+      apt: update_cache=yes
+
+    - name: Install required system packages
+      apt: name={{ install_packages }} state=latest

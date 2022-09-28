@@ -1,0 +1,32 @@
+all:
+  children:
+    app:
+      hosts:
+        ubuntu-basic-1-2-20gb-1:
+          ansible_host: 37.139.35.205
+          ansible_user: ubuntu
+        ubuntu-basic-1-2-20gb-4:
+          ansible_host: 37.139.33.169
+          ansible_user: ubuntu
+      vars:
+        appf:
+          firewall:
+            enabled: true
+    db:
+      hosts:
+        ubuntu-basic-1-2-20gb-3:
+          ansible_host: 37.139.34.130
+          ansible_user: ubuntu
+      vars: 
+        dbf:
+          firewall:
+            enabled: true
+    monitoring:
+      hosts:
+        ubuntu-basic-1-2-20gb-2:
+          ansible_host: 84.23.55.123
+          ansible_user: ubuntu
+      vars: 
+        monitoringf:
+          firewall:
+            enabled: true

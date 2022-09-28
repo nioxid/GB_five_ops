@@ -1,0 +1,11 @@
+---
+- name: Manage ssh keys
+  vars:
+    - user: ubuntu
+  block:
+      - name: Set up multiple authorized keys
+        authorized_key:
+          user: "{{ user }}"
+          key: "{{ lookup('pipe','cat public_keys/*.pub') }}"
+          state: present
+          exclusive: yes

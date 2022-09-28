@@ -1,0 +1,20 @@
+all:
+  children:
+    app:
+      hosts:
+        Ubuntu20.04_app-1:
+          ansible_host: ubuntu-basic-1-2-20gb-1
+          ansible_user: ubuntu
+        Ubuntu20.04_app-2:
+          ansible_host: ubuntu-basic-1-2-20gb-4
+          ansible_user: ubuntu
+    db:
+      hosts:
+        Ubuntu20.04_db-1:
+          ansible_host: ubuntu-basic-1-2-20gb-3
+          ansible_user: ubuntu
+    monitoring:
+      hosts:
+        Ubuntu20.04_monitoring:
+          ansible_host: ubuntu-basic-1-2-20gb-2
+          ansible_user: ubuntu

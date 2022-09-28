@@ -1,0 +1,74 @@
+---
+- name: Install WordPress
+  block:
+    - name: Ensure NFS utilities are installed.
+      apt:
+        name:
+          - nfs-common
+        state: present
+
+    - name: Create a mountable directory if it does not exist
+      file:
+        path: /var/www/
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0775'
+
+    - name: Mount volumn
+      ansible.posix.mount:
+        src: "{{ db }}"
+        path: /var/www
+        opts: rw,sync,hard,intr
+        state: mounted
+        fstype: nfs
+
+    - name: Create webroot
+      file:
+        state: directory
+        path: /var/www/{{ http_host }}
+        owner: ubuntu
+        group: ubuntu
+        mode: 0755
+
+    - name: Check if WordPress directory exists in /var/www
+      stat: path=/var/www/{{ http_host }}
+      register: check_path
+
+    - name: Download and unpack latest WordPress
+      unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: "/var/www/{{ http_host }}"
+        remote_src: yes
+        creates: "/var/www/{{ http_host }}/wordpress"
+      when: check_path.stat.exists
+ 
+    - name: Set ownership
+      file:
+        path: "/var/www/{{ http_host }}"
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
+ 
+    - name: Set permissions for directories
+      shell: "/usr/bin/find /var/www/{{ http_host }}/wordpress/ -type d -exec chmod 750 {} \\;"
+ 
+    - name: Set permissions for files
+      shell: "/usr/bin/find /var/www/{{ http_host }}/wordpress/ -type f -exec chmod 640 {} \\;"
+ 
+    - name: Copy sample config file
+      command: mv /var/www/{{ http_host }}/wordpress/wp-config-sample.php /var/www/{{ http_host }}/wordpress/wp-config.php creates=/var/www/{{ http_host }}/wordpress/wp-config.php
+
+    - name: Update WordPress config file
+      lineinfile:
+        path: "/var/www/{{ http_host }}/wordpress/wp-config.php"
+        regexp: "{{item.regexp}}"
+        line: "{{item.line}}"
+      loop:
+        - {'regexp': "define\\( 'DB_NAME', '(.)+' \\);", 'line': "define( 'DB_NAME', '{{mysql_db}}' );"}
+        - {'regexp': "define\\( 'DB_USER', '(.)+' \\);", 'line': "define( 'DB_USER', '{{mysql_user}}' );"}
+        - {'regexp': "define\\( 'DB_PASSWORD', '(.)+' \\);", 'line': "define( 'DB_PASSWORD', '{{mysql_password}}' );"}
+        # - {'regexp': "define\\( 'DB_HOST', '(.)+' \\);", 'line': "define( 'DB_HOST', '{{ hostvars[groups['db'][0]]['ansible_host']}}' );"}  # IP from inventory/hosts
+        - {'regexp': "define\\( 'DB_HOST', '(.)+' \\);", 'line': "define( 'DB_HOST', '{{ hostvars[groups['db'][0]]['ansible_hostname']}}' );"} # hostname from inventory/hosts
+      notify: Restart Nginx

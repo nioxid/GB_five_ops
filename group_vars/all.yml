@@ -1,0 +1,129 @@
+---
+######################################
+### Configure OS
+# Role OS
+os_update_packages: false  # true or false for update packages
+os_timezone: Europe/Moscow
+install_packages: [ 'curl', 'vim', 'git', 'ufw', 'zsh', 'mc', 'htop', 'iotop', 'wget', 'net-tools' ]
+# Hostnames vm's
+app-1: ubuntu-basic-1-2-20gb-1
+app-2: ubuntu-basic-1-2-20gb-4
+db: ubuntu-basic-1-2-20gb-3:/home/ubuntu/wordpress/
+monitoring: ubuntu-basic-1-2-20gb-2:/home/ubuntu/backup/
+######################################
+# Role Firewall
+# UFW rules
+ufw_state: enabled  # enabled or disabled UFW   
+ssh_port: "22"         # port for SSH connect
+any_port:            # any port to need open
+
+http_policy: allow    # uwf allow or deny
+http_port: "80"       # port http and port nginx
+del_http_rule: no    # if you want delete rule "yes"
+
+https_policy: allow   # uwf allow or deny
+https_port: "443"     # port https
+del_https_rule: no   # if you want delete rule "yes"
+
+mysql_policy: allow    # uwf allow or deny
+mysql_port: "3306"      # port mysql
+del_mysql_rule: no    # if you want delete rule "yes"
+
+nfs_policy: allow    # uwf allow or deny
+nfs_port: "2049"      # port nfs
+del_nfs_rule: no    # if you want delete rule "yes"
+
+prom_policy: allow    # uwf allow or deny for Prometheus
+del_prom_rule: no    # if you want delete rule "yes"
+
+grafana_policy: allow    # uwf allow or deny for Grafana
+del_grafana_rule: no    # if you want delete rule "yes"
+
+exporter_policy: allow    # uwf allow or deny for Node Exporter
+del_exporter_rule: no    # if you want delete rule "yes"
+
+alert_manager_policy: allow    # uwf allow or deny for Alert Manager
+del_alert_manager_rule: no    # if you want delete rule "yes"
+
+telegraf_exporter_policy: allow    # uwf allow or deny for Telegraf Exporter
+del_telegraf_exporter_rule: no    # if you want delete rule "yes"
+
+any_policy: allow    # uwf allow or deny
+ports_any:          # any port to need open or closed
+del_any_rule: yes    # if you want delete rule "yes"
+
+######################################
+### Configure Nginx
+# Role Nginx
+nginx_ppa: ppa:ondrej/nginx   # Repository
+
+# HTTP Settings and general settings
+http_host: "5ops.site"
+http_conf: "5ops.site.conf"
+nginx_user: "www-data"
+nginx_worker_processes: "{{ ansible_processor_vcpus }}"
+nginx_server_tokens: "off"
+nginx_client_max_body_size: "64m"
+nginx_worker_connections: 1024
+nginx_multi_accept: "on"
+
+# gzip settings
+nginx_gzip_enabled: "on"
+nginx_gzip_compression_level: 5
+nginx_gzip_proxied: "any"
+nginx_gzip_types: "text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript"
+
+######################################
+### Configure PHP
+# Role PHP
+php_version: 7.4         # Version PHP
+php_ppa: ppa:ondrej/php  # Repository
+install_php_pkg: ['php{{ php_version }}-curl', 'php{{ php_version }}-fpm', 'php{{ php_version }}-intl', 'php{{ php_version }}-mysql', 'php{{ php_version }}-xml', 'php{{ php_version }}-mbstring', 'php{{ php_version }}-zip', 'php{{ php_version }}-gd','php{{ php_version }}-common','php{{ php_version }}-soap']
+
+######################################
+### Configure Mysql
+# Role MySql
+mysql_root_password: "12345678qwerty"
+mysql_db: "wordpress"
+mysql_user: "dummy"
+mysql_password: "dummy_password"
+mysql_backup_path: "/mnt/backup/"
+mysql_backup_storage_days: 3
+######################################
+
+### Configure Monitoring
+# Role monitoring
+node_exporter_version: "1.3.1"
+node_exporter_bin: /usr/local/bin/node_exporter
+node_exporter_user: node-exporter
+node_exporter_group: "{{ node_exporter_user }}"
+node_exporter_dir_conf: /etc/node_exporter
+node_exporter_dir_custom_conf: /var/lib/node_exporter
+
+prometheus_dir_configuration: "/etc/prometheus"
+prometheus_retention_time: "14d"
+prometheus_scrape_interval: "30s"
+prometheus_node_exporter: true
+prometheus_node_exporter_group: "all"
+prometheus_env: "production"
+prometheus_var_config:
+  global:
+    scrape_interval: "{{ prometheus_scrape_interval }}"
+    evaluation_interval: 5s
+    external_labels:
+      env: '{{ prometheus_env }}'
+  scrape_configs:
+    - job_name: prometheus
+      scrape_interval: 5m
+      static_configs:
+        - targets: ['{{ hostvars[groups["monitoring"][0]]["ansible_hostname"]}}:9090']
+
+grafana_admin_password: qwerty1234567
+
+alert_manager_version: "0.24.0"
+exec_command: "/usr/local/bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/data/alertmanager"
+alert_manager_user: "alertmanager" 
+alert_manager_group: "alertmanager"
+
+## NEED Change vaariables on roles/exporters/files/telegraf.conf
+######################################

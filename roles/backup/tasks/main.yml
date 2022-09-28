@@ -1,0 +1,73 @@
+---
+- name: Install and configure nfs server
+  block:
+  - name: Ensure NFS utilities are installed.
+    apt:
+      name:
+        - nfs-common
+        - nfs-kernel-server
+      state: present
+
+  - name: Create a mountable backup directory if it does not exist
+    file:
+      path: /mnt/backup
+      state: directory
+      owner: ubuntu
+      group: ubuntu
+      mode: '0775'
+
+  - name: Create a mountable wordpress directory if it does not exist
+    file:
+      path: /home/ubuntu/wordpress/
+      state: directory
+      owner: ubuntu
+      group: ubuntu
+      mode: '0775'
+
+  - name: Copy exports_wordpress file.
+    template:
+      src: files/exports_wordpress.j2
+      dest: /etc/exports
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: reload nfs
+    command: 'exportfs -ra'
+
+  - name: Mount volume
+    ansible.posix.mount:
+      src: "{{ monitoring }}"
+      path: /mnt/backup
+      opts: rw,sync,hard,intr
+      state: mounted
+      fstype: nfs
+
+  - name: create mysql backup script
+    template:
+      src: files/crond-mysql-backup.j2
+      dest: /home/ubuntu/mysql-backup.sh
+      mode: 0755
+
+  - name: create mysql backup cron job
+    ansible.builtin.cron:
+      name: run mysql backup script
+      minute: "0"
+      hour: "6"
+      job: "/home/ubuntu/mysql-backup.sh"
+
+  - name: Create a node_exporter directory if it does not exist
+    file:
+      path: "{{ node_exporter_dir_custom_conf }}"
+      state: directory
+      owner: "{{ node_exporter_user }}"
+      group: "{{ node_exporter_user }}"
+      mode: '0776'
+
+  - name: Touch the backup_status.prom file
+    file:
+      path: "{{ node_exporter_dir_custom_conf }}/backup_status.prom"
+      state: touch
+      owner: "{{ node_exporter_user }}"
+      group: "{{ node_exporter_user }}"
+      mode: '0776'

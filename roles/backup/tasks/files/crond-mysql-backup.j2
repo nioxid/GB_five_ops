@@ -1,0 +1,16 @@
+#!/bin/bash
+# Backup mysql database wordpress
+ERROR=0
+day="$(date +'%H:%M_%d-%m-%Y')"
+db_backup="mydb_${day}.sql"
+sudo mysqldump  -udummy -pdummy_password --no-tablespaces wordpress  >/mnt/backup/${db_backup}
+if [[ "x$?" == "x0" ]]; then echo "no errors"; else ((ERROR=ERROR+1)) && echo "you have some errors"; fi
+find /mnt/backup/ -mtime +3 -delete
+# Backup wordpress work files
+backup_files="/home/ubuntu/wordpress"
+dest="/mnt/backup"
+archive_file="wordpress_$day.tgz"
+tar czf $dest/$archive_file $backup_files
+if [[ "x$?" == "x0" ]]; then echo "no errors"; else ((ERROR=ERROR+1)) && echo "you have some errors"; fi
+if [[ "$ERROR" == "0" ]]; then echo "no errors"; else echo "you have some errors"; fi
+if [[ "$ERROR" == "0" ]]; then ((`echo backup_status{status='"1"'} 1  > {{ node_exporter_dir_custom_conf }}/backup_status.prom`)); else ((`echo backup_status{status='"0"'} 0  > {{ node_exporter_dir_custom_conf }}/backup_status.prom`)); fi

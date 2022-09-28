@@ -1,0 +1,16 @@
+---
+- name: Update apt cache & install packages
+  block:
+    - name: Install PHP {{ php_version }} PPA Repo
+      apt_repository:
+        repo: "{{ php_ppa }}"
+
+    - name: Install PHP {{ php_version }}
+      apt: 
+        name: php{{ php_version }} 
+        state: present
+
+    - name: Install PHP packages
+      apt:
+        name: "{{ install_php_pkg }}"
+        state: present

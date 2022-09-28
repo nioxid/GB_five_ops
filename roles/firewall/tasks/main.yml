@@ -1,0 +1,100 @@
+---
+### Setting UFW rules
+# Setting general for all servers
+- name: UFW - setting for OS
+  block: 
+    - name: UFW - Allow {{ ssh_port }},{{ any_port }} connections
+      ufw:
+        rule: allow
+        port: '{{ item }}'
+      loop:
+        - '{{ ssh_port }}'
+        - '{{ any_port }}'
+
+    - name:  UFW - Setup App firewall can access Node Exporter {{ exporter_policy }} on port:9100 delete rule? -{{ del_exporter_rule }}
+      ufw:
+        rule: '{{ exporter_policy }}'
+        port: 9100
+        delete: '{{ del_exporter_rule }}'
+        
+    - name:  UFW - Setup App firewall can access Telegraf Exporter {{ telegraf_exporter_policy }} on port:9273 delete rule? -{{ del_telegraf_exporter_rule }}
+      ufw:
+        rule: '{{ telegraf_exporter_policy }}'
+        port: 9273
+        delete: '{{ del_telegraf_exporter_rule }}'
+# Setting for APP servers
+- name: UFW - setting for APP
+  block: 
+    - name: UFW - Setup App firewall can access HTTP {{ http_policy }} on port:{{ http_port }} delete rule? -{{ del_http_rule }}
+      ufw:
+        rule: '{{ http_policy }}'
+        port: '{{ http_port }}'
+        delete: '{{ del_http_rule }}'
+
+    - name:  UFW - Setup App firewall can access HTTPS {{ https_policy }} on port:{{ https_port }} delete rule? -{{ del_https_rule }}
+      ufw:
+        rule: '{{ https_policy }}'
+        port: '{{ https_port }}'
+        delete: '{{ del_https_rule }}'
+  when: appf.firewall.enabled | default('false') | bool
+
+# Setting for DB server
+- name: UFW - setting for DB
+  block: 
+    - name: UFW - Setup DB firewall can access MySQL {{ mysql_policy }} on port:{{ mysql_port }} delete rule? -{{ del_mysql_rule }}
+      ufw: 
+        rule: '{{ mysql_policy }}'
+        delete: '{{ del_mysql_rule }}'
+        to_port: '{{ mysql_port }}'
+        src: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+      loop: '{{ groups.app }}'
+
+    - name:  UFW - Setup App firewall can access NFS {{ nfs_policy }} on port:{{ nfs_port }} delete rule? -{{ del_nfs_rule }}
+      ufw:
+        rule: '{{ nfs_policy }}'
+        port: '{{ nfs_port }}'
+        delete: '{{ del_nfs_rule }}'
+  when: dbf.firewall.enabled | default('false') | bool
+
+# Setting for monitoring server
+- name: UFW - setting for Monitoring
+  block: 
+    - name:  UFW - Setup App firewall can access NFS {{ nfs_policy }} on port:{{ nfs_port }} delete rule? -{{ del_nfs_rule }}
+      ufw:
+        rule: '{{ nfs_policy }}'
+        port: '{{ nfs_port }}'
+        delete: '{{ del_nfs_rule }}'
+
+    - name:  UFW - Setup App firewall can access Prometheus {{ prom_policy }} on port:9090 delete rule? -{{ del_prom_rule }}
+      ufw:
+        rule: '{{ prom_policy }}'
+        port: 9090
+        delete: '{{ del_prom_rule }}'
+
+    - name:  UFW - Setup App firewall can access Grafana {{ grafana_policy }} on port:3000 delete rule? -{{ del_grafana_rule }}
+      ufw:
+        rule: '{{ grafana_policy }}'
+        port: 3000
+        delete: '{{ del_grafana_rule }}'
+
+    - name:  UFW - Setup App firewall can access Alert Manager {{ alert_manager_policy }} on port:9093 delete rule? -{{ del_alert_manager_rule }}
+      ufw:
+        rule: '{{ alert_manager_policy }}'
+        port: 9093
+        delete: '{{ del_alert_manager_rule }}'
+  when: monitoringf.firewall.enabled | default('false') | bool
+
+# Setting for all servers
+- name: UFW - setting for ANY rules & Enabled\Disabled UFW
+  block:  
+    - name: UFW - Enable ? -{{ ufw_state }} & Deny other incoming traffic by default
+      ufw:
+        state: '{{ ufw_state }}'
+        policy: deny
+        direction: incoming
+    
+    - name: UFW - {{ any_policy}} firewall can access to {{ ports_any }} delete rule? -{{ del_any_rule }}
+      ufw:
+        rule: '{{ any_policy }}'
+        port: '{{ ports_any }}'
+        delete: '{{ del_any_rule }}'

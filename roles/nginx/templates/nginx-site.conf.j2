@@ -1,0 +1,42 @@
+server {
+       listen {{ http_port }};
+       server_name {{ http_host }} www.{{ http_host }};
+       return 301 https://{{ http_host }}$request_uri;
+
+       }
+
+server {
+       listen {{ https_port }} ssl;
+       root /var/www/{{ http_host }}/wordpress/;
+       index index.php index.html index.htm index.nginx-debian.html;
+       server_name {{ http_host }} www.{{ http_host }};
+       ssl_certificate     /etc/ssl/certs/{{ http_host }}.pem;
+       ssl_certificate_key /etc/ssl/private/{{ http_host }}.key;
+       ssl_protocols       TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+       
+       location / {
+               try_files $uri $uri/ =404;
+       }
+
+       location ~ \.php$ {
+               include snippets/fastcgi-php.conf;
+               fastcgi_pass unix:/var/run/php/php{{ php_version }}-fpm.sock;  # Check verion
+       }
+
+       location ~ /\.ht {
+               deny all;
+       }
+}
+
+server { 
+    
+        listen 127.0.0.1;    
+        location /nginx_status {
+        stub_status on;
+
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+
+    }
+}

@@ -1,0 +1,56 @@
+---
+- name: Install MySQL 
+  block:
+    - name: Install MySQL Packages
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: [ 'mysql-server', 'python3-mysqldb' ]
+
+    - name: Set MySQL root Password
+      mysql_user:
+        login_host: 'localhost'
+        login_user: 'root'
+        login_password: '{{ mysql_root_password }}'
+        name: 'root'
+        password: '{{ mysql_root_password }}'
+        state: present
+
+    - name: Creates database for WordPress
+      mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Create MySQL user for WordPress
+      mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        host: '%'
+        priv: "{{ mysql_db }}.*:ALL"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Remove all anonymous user accounts
+      mysql_user:
+        name: ''
+        host_all: yes
+        state: absent
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Remove the MySQL test database
+      mysql_db:
+        name: test
+        state: absent
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Enable remote login to mysql
+      lineinfile:
+         path: /etc/mysql/mysql.conf.d/mysqld.cnf
+         regexp: '^bind-address'
+         line: 'bind-address = {{ ansible_default_ipv4.address }}'
+         backup: yes
+      notify:
+         - Restart mysql

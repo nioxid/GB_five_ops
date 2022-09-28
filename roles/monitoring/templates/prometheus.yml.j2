@@ -1,0 +1,33 @@
+#jinja2: lstrip_blocks: "True"
+{{ prometheus_var_config | to_nice_yaml(indent=2) }}
+{% if prometheus_node_exporter_group %}
+- job_name: node_exporter
+  scrape_interval: 15s
+  static_configs:
+  - targets:
+{% for server in groups[prometheus_node_exporter_group] %}
+    - {{ server }}:9100
+{% endfor %}
+{% endif %}
+
+- job_name: telegraf
+  static_configs:
+  - targets:
+  {% for host in groups['all'] %}
+  {% if inventory_hostname != host %}
+    - '{{ host }}:9273'
+  {% endif %}
+  {% endfor %}
+
+rule_files:
+  - alertrules.yml
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+    {% for host in groups['monitoring'] %}
+    {% if inventory_hostname != host %}
+      - '{{ host }}:9093'
+    {% endif %}
+    {% endfor %}

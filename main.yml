@@ -1,0 +1,49 @@
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - role: managessh
+      tags: managessh
+
+    - role: os
+      tags: os
+
+    - role: firewall
+      tags: firewall
+
+    - role: exporters
+      tags: exporters
+
+- hosts: monitoring
+  gather_facts: true
+  become: true
+  roles:
+    - role: monitoring
+      tags: monitoring
+
+    - role: nfs_server
+      tags: nfs_server
+
+- hosts: db
+  gather_facts: true
+  become: true
+  roles:
+    - role: mysql
+      tags: mysql
+
+    - role: backup
+      tags: mysql_backup
+
+- hosts: app
+  gather_facts: true
+  become: true
+  roles:
+    - role: nginx
+      tags: nginx
+
+    - role: php
+      tags: php
+
+    - role: wp
+      tags: wp
